@@ -11,7 +11,7 @@ services:
       - pg_data:/var/lib/postgresql/data
 
   backend:
-    image: <username>/taskboard-backend:latest
+    image: Worxchit/taskboard-backend:latest
     restart: unless-stopped
     environment:
       DB_HOST:     db
@@ -24,7 +24,7 @@ services:
       - db
 
   frontend:
-    image: <username>/taskboard-frontend:latest
+    image: Worxchit/taskboard-frontend:latest
     restart: unless-stopped
     ports:
       - "80:80"
