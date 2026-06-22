@@ -9,8 +9,9 @@
         <option value="medium">Medium</option>
         <option value="high">High</option>
       </select>
-      <button @click="addTask">+ เพิ่มงาน</button>
+      <button type="button" @click="addTask">+ เพิ่มงาน</button>
     </div>
+    <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
 
     <div class="filter-bar">
       <select v-model="filterStatus" @change="loadTasks">
@@ -53,24 +54,43 @@ const loading      = ref(false)
 const newTitle     = ref('')
 const newPriority  = ref('medium')
 const filterStatus = ref('')
+const errorMsg     = ref('')
 
 async function loadTasks() {
   loading.value = true
-  const params = filterStatus.value ? `?status=${filterStatus.value}` : ''
-  const res    = await fetch(`${API}/api/tasks${params}`)
-  tasks.value  = await res.json()
-  loading.value = false
+  errorMsg.value = ''
+  try {
+    const params = filterStatus.value ? `?status=${filterStatus.value}` : ''
+    const res    = await fetch(`${API}/api/tasks${params}`)
+    if (!res.ok) throw new Error('โหลดรายการงานไม่สำเร็จ')
+    tasks.value  = await res.json()
+  } catch (err) {
+    errorMsg.value = err.message
+    tasks.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 async function addTask() {
-  if (!newTitle.value.trim()) return
-  await fetch(`${API}/api/tasks`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ title: newTitle.value, priority: newPriority.value }),
-  })
-  newTitle.value = ''
-  loadTasks()
+  if (!newTitle.value.trim()) {
+    errorMsg.value = 'กรุณาพิมพ์ชื่องานก่อนกดเพิ่ม'
+    return
+  }
+  errorMsg.value = ''
+  try {
+    const res = await fetch(`${API}/api/tasks`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ title: newTitle.value, priority: newPriority.value }),
+    })
+    if (!res.ok) throw new Error('เพิ่มงานไม่สำเร็จ')
+    newTitle.value = ''
+    filterStatus.value = ''
+    await loadTasks()
+  } catch (err) {
+    errorMsg.value = err.message
+  }
 }
 
 async function changeStatus(task, status) {
@@ -111,4 +131,5 @@ h1 { font-size: 1.8rem; margin-bottom: 1.5rem; }
 .task-actions select { padding: .3rem .5rem; border-radius: 6px; border: 1px solid #ccc; font-size: .82rem; }
 .del-btn { background: #fee2e2; color: #b91c1c; border: none; border-radius: 6px; padding: .3rem .6rem; cursor: pointer; font-size: .82rem; font-weight: 700; }
 .loading, .empty { text-align: center; color: #64748b; padding: 2rem; }
+.error-msg { color: #b91c1c; background: #fee2e2; padding: .5rem .75rem; border-radius: 6px; margin-bottom: 1rem; font-size: .9rem; }
 </style>
